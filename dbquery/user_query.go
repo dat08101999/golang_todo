@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -19,6 +20,7 @@ func InsertUser(user models.User) error {
 		if errFindOne == nil {
 			isRegisterd = errors.New("user dose exist")
 		} else {
+			user.Id = primitive.NewObjectID()
 			_, err2 := colection.InsertOne(ctx, user)
 			if err2 != nil {
 				isRegisterd = err2
