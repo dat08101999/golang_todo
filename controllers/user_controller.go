@@ -106,9 +106,10 @@ func RefreshToken(c *fiber.Ctx) error {
 		}
 	}
 	newToken, err := Create(userName)
+	refreshToken, _ := refreshtTokenCreate(newToken, userName)
 	return res.Response(c, fiber.Map{
 		"Token":         newToken,
-		"Refresh_token": tokenHeader,
+		"Refresh_token": refreshToken,
 	}, err, "Success")
 }
 
