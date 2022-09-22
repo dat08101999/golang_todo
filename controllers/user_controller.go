@@ -51,7 +51,15 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 	token, errCreate := Create(user.UserName)
 	refreshToken, _ := refreshtTokenCreate(token, user.UserName)
-
+	userModel := dbquery.GetUser(user.UserName)
+	if userModel == nil {
+		return res.Response(c, models.ErrorResponse{}, errors.New("user does not exitst "), "")
+	}
+	userModel.Refresh_Token = refreshToken
+	errorUpdate := dbquery.UpdateUser(*userModel)
+	if errorUpdate != nil {
+		return res.Response(c, models.ErrorResponse{}, errorUpdate, "")
+	}
 	return res.Response(c, map[string]interface{}{
 		"Token":         token,
 		"Refresh_token": refreshToken,
@@ -62,7 +70,6 @@ func RefreshToken(c *fiber.Ctx) error {
 	type bodyParams struct {
 		Refresh_Token string `bson:"refresh_token"`
 	}
-
 	var tokenHeader string
 	var tokenReq bodyParams
 	errorBody := c.BodyParser(&tokenReq)
@@ -105,8 +112,22 @@ func RefreshToken(c *fiber.Ctx) error {
 			return res.Response(c, models.ErrorResponse{}, errors.New("invalid token "), "")
 		}
 	}
+	userModel := dbquery.GetUser(userName)
+	if userModel == nil {
+		return res.Response(c, models.ErrorResponse{}, errors.New("invalid refresh token "), "")
+	}
+	if userModel.Refresh_Token != tokenReq.Refresh_Token {
+		return res.Response(c, models.ErrorResponse{}, errors.New("invalid refresh token token "), "")
+	}
+
 	newToken, err := Create(userName)
 	refreshToken, _ := refreshtTokenCreate(newToken, userName)
+	userModel.Refresh_Token = refreshToken
+	errorUpdate := dbquery.UpdateUser(*userModel)
+
+	if errorUpdate != nil {
+		return res.Response(c, models.ErrorResponse{}, errors.New("invalid refresh token "), "")
+	}
 	return res.Response(c, fiber.Map{
 		"Token":         newToken,
 		"Refresh_token": refreshToken,
