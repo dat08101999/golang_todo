@@ -9,9 +9,10 @@ import (
 )
 
 type User struct {
-	Id       primitive.ObjectID `bson:"_id"`
-	UserName string             `bson:"username"`
-	Password string             `bson:"password"`
+	Id            primitive.ObjectID `bson:"_id"`
+	UserName      string             `bson:"username"`
+	Password      string             `bson:"password"`
+	Refresh_Token string             `bson:"refresh_token"`
 }
 
 func Hash(password string) (string, error) {

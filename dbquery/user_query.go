@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func InsertUser(user models.User) error {
@@ -47,4 +48,36 @@ func FindUser(user models.User) error {
 		}
 	})
 	return isFindUser
+}
+
+func GetUser(userName string) *models.User {
+	var user *models.User
+	query(
+		func(client *mongo.Client, ctx context.Context) {
+			collecttion := getColecttion(client, "user")
+			collecttion.FindOne(ctx, bson.M{"username": userName}).Decode(&user)
+		})
+	return user
+}
+func UpdateUser(user models.User) error {
+	var isError error
+	query(func(client *mongo.Client, ctx context.Context) {
+		if FindUser(user) == nil {
+			isError = errors.New("User does not exist")
+		} else {
+			collecttion := getColecttion(client, "user")
+
+			result, errorUpdate := collecttion.UpdateOne(ctx, bson.D{{Key: "username", Value: user.UserName}}, bson.D{{Key: "$set",
+				Value: bson.D{
+					{"refresh_token", user.Refresh_Token},
+				},
+			}}, &options.UpdateOptions{})
+			if errorUpdate != nil {
+				isError = errorUpdate
+			} else {
+				println(result)
+			}
+		}
+	})
+	return isError
 }
