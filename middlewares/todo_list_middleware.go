@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CheckToken(p func(c *fiber.Ctx) error) func(c *fiber.Ctx) error {
+func CheckToken(p func(c *fiber.Ctx, userName string) error) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		bearer := string(c.Request().Header.Peek("authorization"))
 		var username string
@@ -48,6 +48,6 @@ func CheckToken(p func(c *fiber.Ctx) error) func(c *fiber.Ctx) error {
 		}
 		fmt.Println(username)
 
-		return p(c)
+		return p(c, username)
 	}
 }

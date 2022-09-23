@@ -7,4 +7,5 @@ type Todo struct {
 	Name      string             `json:"name"`
 	CreateAt  primitive.DateTime `json:"createAt"`
 	ExpiredAt primitive.DateTime `json:"expiredAt"`
+	Username  string             `json:"username"`
 }

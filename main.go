@@ -12,6 +12,7 @@ import (
 
 func main() {
 	app := fiber.New()
+	app.Post("Todo/Insert", middlewares.CheckToken(controllers.InsertTodo))
 	app.Get(routers.GetListTodo, middlewares.CheckToken(controllers.GetListTodoJson))
 	app.Post("/User/Register", controllers.RegisterUser)
 	app.Post("/User/Login", controllers.LoginUser)
