@@ -9,19 +9,25 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func insertOne() {
+func InsertOne() {
 	query(func(client *mongo.Client, ctx context.Context) {
 
 	})
 }
 
-func deleteMany() {
+func DeleteMany(Ids interface{}) (string, error) {
+	var err error
 	query(func(client *mongo.Client, ctx context.Context) {
-
+		collection := getColecttion(client, "todo")
+		_, errorDelete := collection.DeleteMany(ctx, Ids)
+		if errorDelete != nil {
+			err = errorDelete
+		}
 	})
+	return "success", err
 }
 
-func deleteOne() {
+func DeleteOne() {
 	query(func(client *mongo.Client, ctx context.Context) {
 
 	})

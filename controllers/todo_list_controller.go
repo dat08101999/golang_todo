@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,5 +29,16 @@ func InsertTodo(c *fiber.Ctx, userName string) error {
 		interfaceTodos[i] = d
 	}
 	result, err := dbquery.InsertTodoListMany(interfaceTodos)
+	return res.Response(c, nil, err, result)
+}
+
+func DeleteTodo(c *fiber.Ctx, userName string) error {
+	var listId struct {
+		Ids []primitive.ObjectID `bson:"ids"`
+	}
+	c.BodyParser(&listId)
+	ids := bson.M{"_id": bson.M{"$in": listId.Ids}}
+	// println(ids)
+	result, err := dbquery.DeleteMany(ids)
 	return res.Response(c, nil, err, result)
 }

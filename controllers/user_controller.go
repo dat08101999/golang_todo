@@ -101,6 +101,7 @@ func RefreshToken(c *fiber.Ctx) error {
 		return res.Response(c, models.ErrorResponse{
 			Message: "error",
 		}, err, "")
+
 	}
 
 	var tokenRe string
