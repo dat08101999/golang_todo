@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"api_fiber/dbquery"
+	"api_fiber/middlewares"
 	"api_fiber/models"
 	"api_fiber/res"
 	"errors"
@@ -49,8 +50,9 @@ func LoginUser(c *fiber.Ctx) error {
 	if err != nil {
 		return res.Response(c, user, err, "")
 	}
-	token, errCreate := Create(user.UserName)
-	refreshToken, _ := refreshtTokenCreate(token, user.UserName)
+	keyTime := time.Now().Add(time.Minute * 30).Unix()
+	token, errCreate := Create(user.UserName, string(keyTime))
+	refreshToken, _ := refreshtTokenCreate(string(keyTime), user.UserName)
 	userModel := dbquery.GetUser(user.UserName)
 	if userModel == nil {
 		return res.Response(c, models.ErrorResponse{}, errors.New("user does not exitst "), "")
@@ -88,28 +90,28 @@ func RefreshToken(c *fiber.Ctx) error {
 		}, errorBody, "")
 	}
 	///
-	token, err := jwt.Parse(tokenReq.Refresh_Token, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return []byte(os.Getenv("SECRET_JWT_REFRESH")), nil
-	})
+	token, err := middlewares.ParseToken(tokenReq.Refresh_Token)
 	if err != nil {
 		return res.Response(c, models.ErrorResponse{
 			Message: "error",
 		}, err, "")
 
 	}
-
+	///
+	var headertemp string
+	var userHeader string
+	///
+	tempHeader, err := middlewares.ParseToken(tokenHeader)
+	if claims, ok := tempHeader.Claims.(jwt.MapClaims); ok && token.Valid {
+		headertemp = fmt.Sprintf("%v", claims["key"])
+		userHeader = fmt.Sprintf("%v", claims["username"])
+	}
 	var tokenRe string
 	var userName string
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		tokenRe = fmt.Sprintf("%v", claims["token"])
+		tokenRe = fmt.Sprintf("%v", claims["key"])
 		userName = fmt.Sprintf("%v", claims["user"])
-		if tokenRe != tokenHeader {
+		if tokenRe != headertemp || userName != userHeader {
 			return res.Response(c, models.ErrorResponse{}, errors.New("invalid token "), "")
 		}
 	}
@@ -120,9 +122,9 @@ func RefreshToken(c *fiber.Ctx) error {
 	if userModel.Refresh_Token != tokenReq.Refresh_Token {
 		return res.Response(c, models.ErrorResponse{}, errors.New("invalid refresh token token "), "")
 	}
-
-	newToken, err := Create(userName)
-	refreshToken, _ := refreshtTokenCreate(newToken, userName)
+	keyTime := time.Now().Add(time.Minute * 30).Unix()
+	newToken, err := Create(userName, string(keyTime))
+	refreshToken, _ := refreshtTokenCreate(string(keyTime), userName)
 	userModel.Refresh_Token = refreshToken
 	errorUpdate := dbquery.UpdateUser(*userModel)
 
@@ -135,22 +137,23 @@ func RefreshToken(c *fiber.Ctx) error {
 	}, err, "Success")
 }
 
-func Create(username string) (string, error) {
+func Create(username string, key string) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
 	claims["sub"] = 1
+	claims["key"] = key
 	claims["username"] = username
 	claims["exp"] = time.Now().Add(time.Minute * 30).Unix() //Token hết hạn sau 12 giờ
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("SECRET_JWT")))
 }
 
-func refreshtTokenCreate(token string, userName string) (string, error) {
+func refreshtTokenCreate(key string, userName string) (string, error) {
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
 	rtClaims := refreshToken.Claims.(jwt.MapClaims)
 	rtClaims["sub"] = 1
 	rtClaims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-	rtClaims["token"] = token
+	rtClaims["key"] = key
 	rtClaims["user"] = userName
 	/// error
 
