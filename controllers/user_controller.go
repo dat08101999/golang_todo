@@ -58,10 +58,13 @@ func LoginUser(c *fiber.Ctx) error {
 		return res.Response(c, models.ErrorResponse{}, errors.New("user does not exitst "), "")
 	}
 	userModel.Refresh_Token = refreshToken
-	errorUpdate := dbquery.UpdateUser(*userModel)
-	if errorUpdate != nil {
-		return res.Response(c, models.ErrorResponse{}, errorUpdate, "")
-	}
+	go func() {
+		errorUpdate := dbquery.UpdateUser(*userModel)
+		if errorUpdate != nil {
+			print(errorUpdate.Error())
+			// return res.Response(c, models.ErrorResponse{}, errorUpdate, "")
+		}
+	}()
 	return res.Response(c, map[string]interface{}{
 		"Token":         token,
 		"Refresh_token": refreshToken,
